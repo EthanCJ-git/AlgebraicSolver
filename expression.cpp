@@ -1,12 +1,15 @@
 #include <string>
 #include <memory>
+#include <iostream>
 #include "expression.h"
+#include <math.h>
 
-const std::string expression::toString()
+expressable::expressable(expressable* parentPtr): parent(parentPtr) {}
+
+std::string expression::toString()
 {
     std::string which;
     std::string output;
-
     switch(this->kind)
     {
 	case(add):
@@ -21,7 +24,7 @@ const std::string expression::toString()
 	case(divi):
 	    which = "/";
 	    break;
-	case(exp):
+	case(expo):
 	    which = "^";
 	    break;
     }
@@ -32,22 +35,22 @@ const std::string expression::toString()
 }
 
 //need to add exceptions for malformed input
-expression::expression(std::string start, expression* parentPtr):
-parent(parentPtr)
+expression::expression(std::string start, expressable* parentPtr):
+expressable(parentPtr)
 {
     //assigns expression if operator is present in string, else assign leaf
-    auto assign = [&](const std::string &toCheck)
+    auto assign = [&](const std::string &check)
     {
 	bool condition = false;
-	condition = condition || toCheck.find("+");
-	condition = condition || toCheck.find("-");
-	condition = condition || toCheck.find("*");
-	condition = condition || toCheck.find("/");
-	condition = condition || toCheck.find("^");
+	condition = condition || check.find("+") != std::string::npos;
+	condition = condition || check.find("-") != std::string::npos;
+	condition = condition || check.find("*") != std::string::npos;
+	condition = condition || check.find("/") != std::string::npos;
+	condition = condition || check.find("^") != std::string::npos;
 	if(condition)
-	    return std::make_unique<expression>(toCheck, this);
+	    return std::unique_ptr<expressable>(new expression(check, this));
 	else 
-	    return std::unique_ptr<expression>(new leaf(toCheck, this));
+	    return std::unique_ptr<expressable>(new leaf(check, this));
     };
 
     //looks for next operator to split on, and assigns left and right
@@ -69,7 +72,7 @@ parent(parentPtr)
 	    case(divi):
 	    	which = '/';
 		break;
-	    case(exp):
+	    case(expo):
 	    	which = '^';
 		break;
     	}
@@ -98,28 +101,88 @@ parent(parentPtr)
 	start.pop_back();
     }
 
-    std::vector<Op> vals{ add, sub, mult, divi, exp };
+    std::vector<Op> vals{ add, sub, mult, divi, expo };
     for(auto &val : vals)
     {
-	check(start, val);
+	if(check(start, val)) break;
     }
     
     
 
 }
 
-expression::expression(expression* parentPtr):
-parent(parentPtr),
-left(),
-right()
-{}
+std::string expression::getValue()
+{
+    std::string leftStr = left->getValue();
+    std::string rightStr = right->getValue();
+    std::string output;
+    double leftVal = atof(leftStr.data());
+    double rightVal = atof(rightStr.data());
+    if(leftVal != 0.0 && rightVal != 0.0)
+    {
+	switch(kind)
+    	{
+	    case(add):
+	        output = std::to_string(leftVal+rightVal);
+		break;
+	    case(sub):
+	        output = std::to_string(leftVal-rightVal);
+		break;
+	    case(mult):
+	    	output = std::to_string(leftVal*rightVal);
+		break;
+	    case(divi):
+	    	output = std::to_string(leftVal/rightVal);
+		break;
+	    case(expo):
+	    	output = std::to_string(pow(leftVal, rightVal));
+		break;
+    	}
+    }
+    
+    else
+    {
+	char which;
+	switch(kind)
+    	{
+            case(add):
+            	which = '+';
+	    	break;
+	    case(sub):
+	    	which = '-';
+	    	break;
+	    case(mult):
+            	which = '*';
+	    	break;
+	    case(divi):
+	    	which = '/';
+	    	break;
+	    case(expo):
+	    	which = '^';
+	    	break;
+    	}
+	output.append(leftStr);
+    	output.append(std::string(1, which));
+    	output.append(rightStr);
+    }
+    while(output.find('.') != std::string::npos && output.back() == '0')
+	output.pop_back();
+    if(output.back() == '.')
+	output.pop_back();
+    return output;
+}
 
-leaf::leaf(std::string val, expression* parentPtr):
-expression(parentPtr),
+leaf::leaf(std::string val, expressable* parentPtr): 
+expressable(parentPtr),
 val(val)
 {}
 
-const std::string leaf::toString()
+std::string leaf::toString()
+{
+    std::string out(val);
+    return out;
+}
+std::string leaf::getValue()
 {
     std::string out(val);
     return out;

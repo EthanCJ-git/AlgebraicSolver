@@ -3,37 +3,43 @@
 #include <string>
 #include <vector>
 
-/*	I need to refactor this. Leaf and expression should inherit 
- *	from a shared abstract base class (interface). I'll do that
- *	later; I want to get some output on the screen first.
- */
 
-enum Op { add, sub, mult, divi, exp };
+enum Op { add, sub, mult, divi, expo };
 
-class expression 
+class expressable 
 {
   protected:
-    expression(expression* parentPtr);
-    expression* parent; 		//this pointer is safe because this
-    std::unique_ptr<expression> left;   //object will be deleted if the 
-    std::unique_ptr<expression> right;  //parent is deleted
+    expressable* parent;		//this pointer is safe because the whole
+    expressable(expressable* parentPtr);//object will be deleted if the parent
+					//is deleted -- no leak possible
+  public:				
+    virtual std::string toString() = 0;
+    virtual std::string getValue() = 0;
+};
+
+class expression : public expressable
+{
+  protected:	
+    std::unique_ptr<expressable> left;   
+    std::unique_ptr<expressable> right; 
     Op kind;
 
 
   public:
-    expression(std::string start, expression* parentPtr);
-    virtual const std::string toString();    
+    expression(std::string start, expressable* parentPtr);
+    std::string toString();
+    std::string getValue(); 
 };
 
-class leaf : public expression
+class leaf : public expressable
 {
   protected:
     std::string val;
   public:
-    leaf(std::string val, expression* parent);
+    leaf(std::string val, expressable* parent);
 
-    const std::string toString();
-    
+    std::string toString();
+    std::string getValue();
 };
 
 

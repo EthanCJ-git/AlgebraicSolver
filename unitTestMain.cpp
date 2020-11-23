@@ -56,6 +56,15 @@ TEST(compose, first)
 	EXPECT_EQ(testEx.toString(), answer);
 }
 
+TEST(simplify, first)
+{
+	std::string testString("(4*(5+5))/4");
+	std::string answer("10");
+	expression* null{};
+	expression testEx(testString, null);
+	EXPECT_EQ(testEx.getValue(), answer);
+}
+
 int main(int argc, char **argv)
 {
 	
